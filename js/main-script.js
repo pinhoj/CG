@@ -259,7 +259,6 @@ function checkTransformations() {
     }
     if (rotateHead != 0){
         Head.rotation.z = THREE.MathUtils.clamp(Head.rotation.z - (Math.PI/32 * rotateHead), 0, Math.PI);
-        console.log(Head.rotation.z);
     }
 }
 
@@ -374,20 +373,28 @@ function onKeyUp(e) {
             arrowSelected = false;
             break;
         case "q": // q
+            rotateFeet = Math.min(0, rotateFeet); 
+            break;
         case "a": // a
-            rotateFeet = 0;
+            rotateFeet = Math.max(0, rotateFeet); 
             break;
         case "w": // w
+            rotateWaist = Math.min(0, rotateWaist); 
+            break;
         case "s": // s
-            rotateWaist = 0;
+            rotateWaist = Math.max(0, rotateWaist); 
             break;
         case "e": //e
+            moveArms = Math.min(0, moveArms); 
+            break
         case "d": // d
-            moveArms = 0;
+            moveArms = Math.max(0, moveArms); 
             break;
         case "r": // r
+            rotateHead = Math.min(0, rotateHead); 
+            break;
         case "f": // f
-            rotateHead = 0;
+            rotateHead = Math.max(0, rotateHead); 
             break;
     }
 }
