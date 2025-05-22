@@ -13,6 +13,7 @@ let cameras = [], camera, scene, renderer;
 let rotateHead = 0, rotateWaist = 0, rotateFeet = 0, moveArms = 0;
 let LArm, RArm, Feet = new THREE.Group(), Legs = new THREE.Group(), Head;
 let delta;
+let trailerMove = {x: 0, z: 0};
 const clock = new THREE.Clock();
 const materials = new Map();
 
@@ -66,7 +67,7 @@ function createCameras() {
 ////////////////////////
 
 function createMaterials() {
-    materials.set("trailer", new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false }));
+    materials.set("trailer", new THREE.MeshBasicMaterial({ color: 0x404040, wireframe: false }));
     materials.set("wheel", new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: false }));
     materials.set("torso", new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false }));
     materials.set("abdomen", new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false }));
@@ -326,9 +327,13 @@ function init() {
 /////////////////////
 function animate() {
 
+    trailer.position.x += trailerMove.x;
+    trailer.position.z += trailerMove.z;
+
     update();
     render();
     requestAnimationFrame(animate);
+
 }
 
 ////////////////////////////
@@ -342,10 +347,16 @@ function onResize() {}
 function onKeyDown(e) {
     switch (e.key) {
         case "ArrowUp":
-        case "ArrowLeft":
+            trailerMove.z = -2;
+            break;
         case "ArrowDown":
+            trailerMove.z = 2;
+            break;
+        case "ArrowLeft":
+            trailerMove.x = -2;
+            break;
         case "ArrowRight":
-            arrowSelected = true;
+            trailerMove.x = 2;
             break;
         case "1": // q
             camera = cameras[0];
@@ -389,9 +400,6 @@ function onKeyDown(e) {
         case "f": // f
             rotateHead = -1;
             break;
-        case "7": // 6
-            // materials.forEach(value => {value.wireframe = !value.wireframe}); // TODO
-            break;
     }
 }
 ///////////////////////
@@ -400,10 +408,12 @@ function onKeyDown(e) {
 function onKeyUp(e) {
     switch (e.key) {
         case "ArrowUp":
-        case "ArrowLeft":
         case "ArrowDown":
+            trailerMove.z = 0;
+            break;
+        case "ArrowLeft":
         case "ArrowRight":
-            arrowSelected = false;
+            trailerMove.x = 0;
             break;
         case "q": // q
             rotateFeet = Math.min(0, rotateFeet); 
