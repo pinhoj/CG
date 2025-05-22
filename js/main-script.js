@@ -8,13 +8,13 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 /* GLOBAL VARIABLES */
 //////////////////////
 let robot = new THREE.Object3D();
+let trailer = new THREE.Object3D();
 let cameras = [], camera, scene, renderer;
 let rotateHead = 0, rotateWaist = 0, rotateFeet = 0, moveArms = 0;
 let LArm, RArm, Feet = new THREE.Group(), Legs = new THREE.Group(), Head;
 let delta;
-const materialred = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false });
-const materialblack = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: false });
 const clock = new THREE.Clock();
+const materials = new Map();
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -26,6 +26,7 @@ function createScene() {
     scene.add(new THREE.AxesHelper(10));
     
     createRobot(0, -100, 0);
+    createTrailer(-150, 35, 0);
 }
 
 //////////////////////
@@ -64,59 +65,73 @@ function createCameras() {
 /* CREATE OBJECT3D(S) */
 ////////////////////////
 
-function addAntena(obj, x, y, z, material){
+function createMaterials() {
+    materials.set("trailer", new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false }));
+    materials.set("wheel", new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: false }));
+    materials.set("torso", new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false }));
+    materials.set("abdomen", new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false }));
+    materials.set("waist", new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false }));
+    materials.set("forearm", new THREE.MeshBasicMaterial({ color: 0xff4444, wireframe: false }));
+    materials.set("arm", new THREE.MeshBasicMaterial({ color: 0xff3333, wireframe: false }));
+    materials.set("leg", new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false }));
+    materials.set("thigh", new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: false }));
+    materials.set("head", new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: false }));
+    materials.set("antenna", new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: false }));
+    materials.set("eye", new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false }));
+    materials.set("foot", new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: false }));
+    materials.set("pipe", new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false }));
+}
+function addAntena(obj, x, y, z){
     const geometry = new THREE.ConeGeometry(4, 10, 4); // (2, 4, 2)
-    const mesh = new THREE.Mesh(geometry, material);
+    var mesh = new THREE.Mesh(geometry, materials.get("antenna"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
 function addEye(obj, x, y, z){
     const geometry = new THREE.BoxGeometry(1, 5, 5); // (2, 4, 2)
-    const eyeMaterial = new THREE.MeshBasicMaterial({color: 0x808080, wireframe: false});
-    const mesh = new THREE.Mesh(geometry, eyeMaterial);
+    var mesh = new THREE.Mesh(geometry, materials.get("eye"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
-function addRobotHead(obj, x, y, z, material) {
+function addRobotHead(obj, x, y, z) {
     const geometry = new THREE.BoxGeometry(20, 20, 30); // (2, 4, 2)
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.get("head"));
     mesh.position.set(x, y, z);
-    addAntena(mesh, 0, 15, -10, materialblack);
-    addAntena(mesh, 0, 15, 10, materialblack);
-    addEye(mesh, 10, 0, -6, materialred);
-    addEye(mesh, 10, 0, 6, materialred);
+    addAntena(mesh, 0, 15, -10);
+    addAntena(mesh, 0, 15, 10);
+    addEye(mesh, 10, 0, -6);
+    addEye(mesh, 10, 0, 6);
     obj.add(mesh);
 
 }
 
 function addWheel(obj, x, y, z) {
-    const wheelMaterial = new THREE.MeshBasicMaterial({color: 0x0f0f0f, wireframe: false});
     const geometry = new THREE.CylinderGeometry(8, 8, 10);
-    const mesh = new THREE.Mesh(geometry, wheelMaterial);
+    const mesh = new THREE.Mesh(geometry, materials.get("wheel"));
     mesh.rotateX(Math.PI/2);
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
-function addRobotTorso(obj, x, y, z, material) {
+function addRobotTorso(obj, x, y, z) {
     const geometry = new THREE.BoxGeometry(20, 40, 70); // (2, 4, 2)
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.get("torso"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
-function addRobotAbdomen(obj, x, y, z, material) {
+function addRobotAbdomen(obj, x, y, z) {
     const geometry = new THREE.BoxGeometry(20, 20, 30); // (2, 4, 2)
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.get("abdomen"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
-function addRobotWaist(obj, x, y, z, material) {
+function addRobotWaist(obj, x, y, z) {
     const geometry = new THREE.BoxGeometry(20, 20, 70); // (2, 4, 2)
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.get("waist"));
     mesh.position.set(x, y, z);
     addWheel(mesh, -5, -5, - 40);
     addWheel(mesh, -5, -5, + 40);
@@ -124,16 +139,16 @@ function addRobotWaist(obj, x, y, z, material) {
     obj.add(mesh);
 }
 
-function addThigh(obj, x, y, z, material) {
+function addThigh(obj, x, y, z) {
     const geometry = new THREE.BoxGeometry(10, 20, 20); // (2, 4, 2)
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.get("thigh"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
-function addFoot(x, y, z, material) {
+function addFoot(x, y, z) {
     const geometry = new THREE.BoxGeometry(10, 10, 30); // (2, 4, 2)
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.get("foot"));
     mesh.position.set(x, y, z);
     Feet.add(mesh);
     mesh.add(Feet);
@@ -141,25 +156,22 @@ function addFoot(x, y, z, material) {
 
 function addExhaustPipe(obj, x, y, z){
     const geometry = new THREE.CylinderGeometry(2,2,40);
-    const material = new THREE.MeshBasicMaterial({ color: 0x555555, wireframe: false });
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.get("pipe"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
 function addForearm(obj, x, y, z){
     const geometry = new THREE.BoxGeometry(40,20,20);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff4444, wireframe: false });
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.get("forearm"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
 function addRobotArm(obj, x, y, z, left) {
     
-    const material = new THREE.MeshBasicMaterial({ color: 0xff3333, wireframe: false });
     const geometry = new THREE.BoxGeometry(20, 40, 20); // (2, 4, 2)
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(geometry, materials.get("arm"));
     mesh.position.set(x, y, z);
 
     if (left){
@@ -175,20 +187,20 @@ function addRobotArm(obj, x, y, z, left) {
 }
 
 
-function addRobotLeg(obj, x, y, z, left, material){
+function addRobotLeg(obj, x, y, z, left){
     var geometry = new THREE.BoxGeometry(10, 80, 30); // (2, 4, 2)
-    var mesh = new THREE.Mesh(geometry, material);
+    var mesh = new THREE.Mesh(geometry, materials.get("leg"));
     mesh.position.set(x, y, z);
 
-    addThigh(mesh, 0, 50, 0, materialblack); // (x, y, z)
+    addThigh(mesh, 0, 50, 0); // (x, y, z)
     
     if (left){
-        addFoot(10, 0, 20, materialblack);
+        addFoot(10, 0, 20);
         addWheel(mesh, 0, -10, + 20);
         addWheel(mesh, 0, -30, + 20);
     }
     else{
-        addFoot(10, 0, -20, materialblack);
+        addFoot(10, 0, -20);
         addWheel(mesh, 0, -10, - 20);
         addWheel(mesh, 0, -30, - 20);
     }
@@ -200,8 +212,8 @@ function createRobot(x, y, z){
     Legs.position.set(x, y + 110, z); 
     Feet.position.set(x + 5, y + 5, z);
 
-    addRobotLeg(robot, x + 5, y + 40, z + 20, true, materialred);
-    addRobotLeg(robot, x + 5, y + 40, z - 20, false, materialred);
+    addRobotLeg(robot, x + 5, y + 40, z + 20, true);
+    addRobotLeg(robot, x + 5, y + 40, z - 20, false);
     Legs.add(Feet);
     robot.add(Legs);
     
@@ -211,16 +223,36 @@ function createRobot(x, y, z){
     addRobotArm(RArm, x - 10, y + 160, z - 45, false);
     robot.add(LArm);
     robot.add(RArm);
-    
-    addRobotTorso(robot, x + 10, y + 160, z, materialred);
-    addRobotAbdomen(robot, x + 10, y + 130, z, materialred);
 
-    addRobotWaist(robot, x + 10, y + 110, z, materialred);
+    addRobotTorso(robot, x + 10, y + 160, z);
+    addRobotAbdomen(robot, x + 10, y + 130, z);
+
+    addRobotWaist(robot, x + 10, y + 110, z);
     Head = new THREE.Group();
     Head.position.set(x, y + 180, z);
-    addRobotHead(Head, 10, 10, 0, materialblack);
+    addRobotHead(Head, 10, 10, 0);
     robot.add(Head);
     scene.add(robot);
+}
+
+function createTrailer(x, y, z) {
+    trailer = new THREE.Object3D();
+
+    // Contentor principal (caixa grande)
+    const boxGeometry = new THREE.BoxGeometry(150, 90, 70);
+    const box = new THREE.Mesh(boxGeometry, materials.get("trailer"));
+    box.position.set(0, 20, 0);
+    trailer.add(box);
+
+    // Rodas
+    addWheel(trailer, -50, -30, -35);
+    addWheel(trailer,  -10, -30, -35);
+    addWheel(trailer, -50, -30, 35);
+    addWheel(trailer,  -10, -30, 35);
+
+    trailer.position.set(x, y, z);
+    scene.add(trailer);
+
 }
 
 
@@ -280,9 +312,7 @@ function init() {
     document.body.appendChild(renderer.domElement);
     clock.start()
 
-    
-
-    // createMaterials();
+    createMaterials();
     createScene();
     createCameras();
 
@@ -331,6 +361,9 @@ function onKeyDown(e) {
             break;
         case "5": // 5
             camera = cameras[4];
+            break;
+        case "7": // 7
+            materials.forEach(value => {value.wireframe = !value.wireframe});
             break;
         case "q": // q
             rotateFeet = 1;
