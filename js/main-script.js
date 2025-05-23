@@ -14,6 +14,9 @@ let rotateHead = 0, rotateWaist = 0, rotateFeet = 0, moveArms = 0;
 let LArm, RArm, Feet = new THREE.Group(), Legs = new THREE.Group(), Head;
 let delta;
 let trailerMove = {x: 0, z: 0};
+let trailerLocked = false;
+let snapping = false;
+let snapTarget = new THREE.Vector3();
 const clock = new THREE.Clock();
 const materials = new Map();
 
@@ -240,32 +243,46 @@ function createTrailer(x, y, z) {
     trailer = new THREE.Object3D();
 
     // Contentor principal (caixa grande)
-    const boxGeometry = new THREE.BoxGeometry(150, 90, 70);
+    const boxGeometry = new THREE.BoxGeometry(170, 90, 70);
     const box = new THREE.Mesh(boxGeometry, materials.get("trailer"));
     box.position.set(0, 20, 0);
     trailer.add(box);
 
     // Rodas
-    addWheel(trailer, -50, -30, -35);
-    addWheel(trailer,  -10, -30, -35);
-    addWheel(trailer, -50, -30, 35);
-    addWheel(trailer,  -10, -30, 35);
+    addWheel(trailer, -60, -30, -40);
+    addWheel(trailer, -40, -30, -40);
+    addWheel(trailer, -60, -30, 40);
+    addWheel(trailer,  -40, -30, 40);
 
     trailer.position.set(x, y, z);
     scene.add(trailer);
 
 }
 
-
+function getAABB(obj){
+    return new THREE.Box3().setFromObject(obj);
+}
 //////////////////////
 /* CHECK COLLISIONS */
 //////////////////////
-function checkCollisions() {}
+function checkCollisions() {
+    if (trailerLocked || snapping) return false;
+    const robotBox = getAABB(robot);
+    const trailerBox = getAABB(trailer);
+    return robotBox.intersectsBox(trailerBox);
+}
 
 ///////////////////////
 /* HANDLE COLLISIONS */
 ///////////////////////
-function handleCollisions() {}
+function handleCollisions() {
+    snapping = true;
+
+    snapTarget.copy(robot.position);
+    snapTarget.x = -120;
+    snapTarget.y = trailer.position.y;
+    snapTarget.z = trailer.position.z;
+}
 
 ////////////
 /* UPDATE */
@@ -327,13 +344,26 @@ function init() {
 /////////////////////
 function animate() {
 
-    trailer.position.x += trailerMove.x;
-    trailer.position.z += trailerMove.z;
+    if (!trailerLocked && !snapping) {
+        trailer.position.x += trailerMove.x;
+        trailer.position.z += trailerMove.z;
+
+        if (checkCollisions()) {
+            handleCollisions();
+        }
+    }
+    if (snapping) {
+        trailer.position.lerp(snapTarget, 0.1);
+        if (trailer.position.distanceTo(snapTarget) < 1) {
+            trailer.position.copy(snapTarget);
+            trailerLocked = true;
+            snapping = false;
+        }
+    }
 
     update();
     render();
     requestAnimationFrame(animate);
-
 }
 
 ////////////////////////////
