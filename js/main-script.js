@@ -314,6 +314,11 @@ function handleCollisions() {
 ////////////
 function update() {
     delta = clock.getDelta();
+
+    if(trailerLocked && isRobot) {
+        trailerLocked = false;
+    }
+    
     checkTransformations();
     if (!trailerLocked && !snapping) {
         trailer.position.x += trailerMove.x;
