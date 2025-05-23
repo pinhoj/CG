@@ -258,23 +258,34 @@ function createTrailer(x, y, z) {
 }
 
 function getAABB(obj){
-    let min = {x:1000, y:1000, z:1000},  max = {x:-1000, y:-1000, z:-1000};
+    let objmin = {x:1000, y:1000, z:1000},  objmax = {x:-1000, y:-1000, z:-1000};
     obj.traverse((child)=>{
         if (child.isMesh){
             let position = child.geometry.attributes.position;
             for (let i = 0; i < position.count; i++) {
-                min.x = Math.min(min.x, position.getX(i))
-                min.y = Math.min(min.y, position.getY(i))
-                min.z = Math.min(min.z, position.getZ(i))
-                max.x = Math.max(max.x, position.getX(i))
-                max.y = Math.max(max.y, position.getY(i))
-                max.z = Math.max(max.z, position.getZ(i))
+                let vertex = new THREE.Vector3();
+                vertex.fromBufferAttribute(position,i);
+                let pos = vertex.applyMatrix4(child.matrixWorld); // Convert to world space
+                objmin.x = Math.min(objmin.x, pos.x);
+                objmin.y = Math.min(objmin.y, pos.y);
+                objmin.z = Math.min(objmin.z, pos.z);
+                objmax.x = Math.max(objmax.x, pos.x);
+                objmax.y = Math.max(objmax.y, pos.y);
+                objmax.z = Math.max(objmax.z, pos.z);
             }
         }
     })
-    console.log(min,max);
-    let Box = new THREE.BoxGeometry(min,max)
-    return new THREE.Box3().setFromObject(obj);
+    let Box = {min : objmin, max : objmax};
+    return Box;
+}
+
+function intersectsBox(A, B) {
+    return  (A.max.x > B.min.x) &&
+            (A.min.x < B.max.x) && 
+            (A.max.y > B.min.y) &&
+            (A.min.y < B.max.y) && 
+            (A.max.z > B.min.z) &&
+            (A.min.z < B.max.z)
 }
 //////////////////////
 /* CHECK COLLISIONS */
@@ -283,7 +294,7 @@ function checkCollisions() {
     if (trailerLocked || snapping || isRobot) return false;
     const robotBox = getAABB(robot);
     const trailerBox = getAABB(trailer);
-    return robotBox.intersectsBox(trailerBox);
+    return intersectsBox(robotBox, trailerBox);
 }
 
 ///////////////////////
