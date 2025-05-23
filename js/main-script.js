@@ -13,9 +13,11 @@ let cameras = [], camera, scene, renderer;
 let rotateHead = 0, rotateWaist = 0, rotateFeet = 0, moveArms = 0;
 let LArm, RArm, Feet = new THREE.Group(), Legs = new THREE.Group(), Head;
 let delta;
-let trailerMove = {x: 0, z: 0};
+let trailerMove = {x: 0, y: 0};
+let pressedKeys = {};
 let trailerLocked = false;
 let snapping = false;
+let isRobot = true;
 let snapTarget = new THREE.Vector3();
 const clock = new THREE.Clock();
 const materials = new Map();
@@ -61,10 +63,6 @@ function createCameras() {
     }
     camera = cameras[1];
 }
-/////////////////////
-/* CREATE LIGHT(S) */
-/////////////////////
-
 ////////////////////////
 /* CREATE OBJECT3D(S) */
 ////////////////////////
@@ -86,21 +84,21 @@ function createMaterials() {
     materials.set("pipe", new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false }));
 }
 function addAntena(obj, x, y, z){
-    const geometry = new THREE.ConeGeometry(4, 10, 4); // (2, 4, 2)
+    const geometry = new THREE.ConeGeometry(4, 10, 4); 
     var mesh = new THREE.Mesh(geometry, materials.get("antenna"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
 function addEye(obj, x, y, z){
-    const geometry = new THREE.BoxGeometry(1, 5, 5); // (2, 4, 2)
+    const geometry = new THREE.BoxGeometry(1, 5, 5); 
     var mesh = new THREE.Mesh(geometry, materials.get("eye"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
 function addRobotHead(obj, x, y, z) {
-    const geometry = new THREE.BoxGeometry(20, 20, 30); // (2, 4, 2)
+    const geometry = new THREE.BoxGeometry(20, 20, 30); 
     const mesh = new THREE.Mesh(geometry, materials.get("head"));
     mesh.position.set(x, y, z);
     addAntena(mesh, 0, 15, -10);
@@ -120,21 +118,21 @@ function addWheel(obj, x, y, z) {
 }
 
 function addRobotTorso(obj, x, y, z) {
-    const geometry = new THREE.BoxGeometry(20, 40, 70); // (2, 4, 2)
+    const geometry = new THREE.BoxGeometry(20, 40, 70); 
     const mesh = new THREE.Mesh(geometry, materials.get("torso"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
 function addRobotAbdomen(obj, x, y, z) {
-    const geometry = new THREE.BoxGeometry(20, 20, 30); // (2, 4, 2)
+    const geometry = new THREE.BoxGeometry(20, 20, 30); 
     const mesh = new THREE.Mesh(geometry, materials.get("abdomen"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
 function addRobotWaist(obj, x, y, z) {
-    const geometry = new THREE.BoxGeometry(20, 20, 70); // (2, 4, 2)
+    const geometry = new THREE.BoxGeometry(20, 20, 70); 
     const mesh = new THREE.Mesh(geometry, materials.get("waist"));
     mesh.position.set(x, y, z);
     addWheel(mesh, -5, -5, - 40);
@@ -144,14 +142,14 @@ function addRobotWaist(obj, x, y, z) {
 }
 
 function addThigh(obj, x, y, z) {
-    const geometry = new THREE.BoxGeometry(10, 20, 20); // (2, 4, 2)
+    const geometry = new THREE.BoxGeometry(10, 20, 20); 
     const mesh = new THREE.Mesh(geometry, materials.get("thigh"));
     mesh.position.set(x, y, z);
     obj.add(mesh);
 }
 
 function addFoot(x, y, z) {
-    const geometry = new THREE.BoxGeometry(10, 10, 30); // (2, 4, 2)
+    const geometry = new THREE.BoxGeometry(10, 10, 30); 
     const mesh = new THREE.Mesh(geometry, materials.get("foot"));
     mesh.position.set(x, y, z);
     Feet.add(mesh);
@@ -174,7 +172,7 @@ function addForearm(obj, x, y, z){
 
 function addRobotArm(obj, x, y, z, left) {
     
-    const geometry = new THREE.BoxGeometry(20, 40, 20); // (2, 4, 2)
+    const geometry = new THREE.BoxGeometry(20, 40, 20); 
     const mesh = new THREE.Mesh(geometry, materials.get("arm"));
     mesh.position.set(x, y, z);
 
@@ -192,11 +190,11 @@ function addRobotArm(obj, x, y, z, left) {
 
 
 function addRobotLeg(obj, x, y, z, left){
-    var geometry = new THREE.BoxGeometry(10, 80, 30); // (2, 4, 2)
+    var geometry = new THREE.BoxGeometry(10, 80, 30); 
     var mesh = new THREE.Mesh(geometry, materials.get("leg"));
     mesh.position.set(x, y, z);
 
-    addThigh(mesh, 0, 50, 0); // (x, y, z)
+    addThigh(mesh, 0, 50, 0); 
     
     if (left){
         addFoot(10, 0, 20);
@@ -252,7 +250,7 @@ function createTrailer(x, y, z) {
     addWheel(trailer, -60, -30, -40);
     addWheel(trailer, -40, -30, -40);
     addWheel(trailer, -60, -30, 40);
-    addWheel(trailer,  -40, -30, 40);
+    addWheel(trailer, -40, -30, 40);
 
     trailer.position.set(x, y, z);
     scene.add(trailer);
@@ -260,13 +258,29 @@ function createTrailer(x, y, z) {
 }
 
 function getAABB(obj){
+    let min = {x:1000, y:1000, z:1000},  max = {x:-1000, y:-1000, z:-1000};
+    obj.traverse((child)=>{
+        if (child.isMesh){
+            let position = child.geometry.attributes.position;
+            for (let i = 0; i < position.count; i++) {
+                min.x = Math.min(min.x, position.getX(i))
+                min.y = Math.min(min.y, position.getY(i))
+                min.z = Math.min(min.z, position.getZ(i))
+                max.x = Math.max(max.x, position.getX(i))
+                max.y = Math.max(max.y, position.getY(i))
+                max.z = Math.max(max.z, position.getZ(i))
+            }
+        }
+    })
+    console.log(min,max);
+    let Box = new THREE.BoxGeometry(min,max)
     return new THREE.Box3().setFromObject(obj);
 }
 //////////////////////
 /* CHECK COLLISIONS */
 //////////////////////
 function checkCollisions() {
-    if (trailerLocked || snapping) return false;
+    if (trailerLocked || snapping || isRobot) return false;
     const robotBox = getAABB(robot);
     const trailerBox = getAABB(trailer);
     return robotBox.intersectsBox(trailerBox);
@@ -280,7 +294,7 @@ function handleCollisions() {
 
     snapTarget.copy(robot.position);
     snapTarget.x = -120;
-    snapTarget.y = trailer.position.y;
+    snapTarget.y = 35;
     snapTarget.z = trailer.position.z;
 }
 
@@ -290,14 +304,31 @@ function handleCollisions() {
 function update() {
     delta = clock.getDelta();
     checkTransformations();
+    if (!trailerLocked && !snapping) {
+        trailer.position.x += trailerMove.x;
+        trailer.position.y += trailerMove.y;
+
+        if (checkCollisions()) {
+            handleCollisions();
+        }
+    }
+    if (snapping) {
+        trailer.position.lerp(snapTarget, 0.1);
+        if (trailer.position.distanceTo(snapTarget) < 1) {
+            trailer.position.copy(snapTarget);
+            trailerLocked = true;
+            snapping = false;
+        }
+    }
+
     
 }
 function checkTransformations() {
     if (rotateFeet != 0){
-        Feet.rotation.z = THREE.MathUtils.clamp(Feet.rotation.z + Math.PI/32 * rotateFeet,-Math.PI / 2, 0);
+        Feet.rotation.z = THREE.MathUtils.clamp(Feet.rotation.z + Math.PI/32 * rotateFeet, -Math.PI / 2, 0);
     }
     if (rotateWaist != 0){
-        Legs.rotation.z = THREE.MathUtils.clamp(Legs.rotation.z + Math.PI/32 * rotateWaist,-Math.PI / 2, 0);
+        Legs.rotation.z = THREE.MathUtils.clamp(Legs.rotation.z + Math.PI/32 * rotateWaist, -Math.PI / 2, 0);
     }
     if (moveArms != 0){
         let LVector = new THREE.Vector3(0, 0, moveArms);
@@ -310,6 +341,11 @@ function checkTransformations() {
     if (rotateHead != 0){
         Head.rotation.z = THREE.MathUtils.clamp(Head.rotation.z - (Math.PI/32 * rotateHead), 0, Math.PI);
     }
+    if (Feet.rotation.z == -Math.PI/2 && Legs.rotation.z == -Math.PI/2 && 
+        Head.rotation.z == Math.PI && LArm.position.z == -20){
+            isRobot = false;
+    }
+    else isRobot = true;
 }
 
 /////////////
@@ -344,23 +380,7 @@ function init() {
 /////////////////////
 function animate() {
 
-    if (!trailerLocked && !snapping) {
-        trailer.position.x += trailerMove.x;
-        trailer.position.z += trailerMove.z;
-
-        if (checkCollisions()) {
-            handleCollisions();
-        }
-    }
-    if (snapping) {
-        trailer.position.lerp(snapTarget, 0.1);
-        if (trailer.position.distanceTo(snapTarget) < 1) {
-            trailer.position.copy(snapTarget);
-            trailerLocked = true;
-            snapping = false;
-        }
-    }
-
+    
     update();
     render();
     requestAnimationFrame(animate);
@@ -375,12 +395,13 @@ function onResize() {}
 /* KEY DOWN CALLBACK */
 ///////////////////////
 function onKeyDown(e) {
+    pressedKeys[e.key] = true;
     switch (e.key) {
         case "ArrowUp":
-            trailerMove.z = -2;
+            trailerMove.y = 2;
             break;
         case "ArrowDown":
-            trailerMove.z = 2;
+            trailerMove.y = -2;
             break;
         case "ArrowLeft":
             trailerMove.x = -2;
@@ -431,43 +452,81 @@ function onKeyDown(e) {
             rotateHead = -1;
             break;
     }
+    if (["q", "a", "w", "s", "e", "d", "r", "f", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        
+        if (pressedKeys["q"] && pressedKeys["a"]) {
+            rotateFeet = 0;
+        }
+        if (pressedKeys["w"] && pressedKeys["s"]) {
+            rotateWaist = 0;
+        }
+        if (pressedKeys["e"] && pressedKeys["d"]) {
+            moveArms = 0;
+        }
+        if (pressedKeys["r"] && pressedKeys["f"]) {
+            rotateHead = 0;
+        }
+        if (pressedKeys["ArrowUp"] && pressedKeys["ArrowDown"]) {
+            trailerMove.y = 0;
+        }
+        if (pressedKeys["ArrowLeft"] && pressedKeys["ArrowRight"]) {
+            trailerMove.x = 0;
+        }
+    }
 }
 ///////////////////////
 /* KEY UP CALLBACK */
 ///////////////////////
 function onKeyUp(e) {
+    pressedKeys[e.key] = false;
     switch (e.key) {
         case "ArrowUp":
         case "ArrowDown":
-            trailerMove.z = 0;
+            trailerMove.y = 0;
             break;
         case "ArrowLeft":
         case "ArrowRight":
             trailerMove.x = 0;
             break;
-        case "q": // q
-            rotateFeet = Math.min(0, rotateFeet); 
+        case "q":
+        case "a":
+            if (pressedKeys["q"] && !pressedKeys["a"]) {
+                rotateFeet = 1;
+            } else if (!pressedKeys["q"] && pressedKeys["a"]) {
+                rotateFeet = -1;
+            } else {
+                rotateFeet = 0;
+            }
             break;
-        case "a": // a
-            rotateFeet = Math.max(0, rotateFeet); 
+        case "w":
+        case "s":
+            if (pressedKeys["w"] && !pressedKeys["s"]) {
+                rotateWaist = 1;
+            } else if (!pressedKeys["w"] && pressedKeys["s"]) {
+                rotateWaist = -1;
+            } else {
+                rotateWaist = 0;
+            }
             break;
-        case "w": // w
-            rotateWaist = Math.min(0, rotateWaist); 
+        case "e":
+        case "d":
+            if (pressedKeys["e"] && !pressedKeys["d"]) {
+                moveArms = 1;
+            } else if (!pressedKeys["e"] && pressedKeys["d"]) {
+                moveArms = -1;
+            } else {
+                moveArms = 0;
+            }
             break;
-        case "s": // s
-            rotateWaist = Math.max(0, rotateWaist); 
-            break;
-        case "e": //e
-            moveArms = Math.min(0, moveArms); 
-            break
-        case "d": // d
-            moveArms = Math.max(0, moveArms); 
-            break;
-        case "r": // r
-            rotateHead = Math.min(0, rotateHead); 
-            break;
-        case "f": // f
-            rotateHead = Math.max(0, rotateHead); 
+        case "r":
+        case "f":
+            if (pressedKeys["r"] && !pressedKeys["f"]) {
+                rotateHead = 1;
+            } else if (!pressedKeys["r"] && pressedKeys["f"]) {
+                rotateHead = -1;
+            } else {
+                rotateHead = 0;
+            }
             break;
     }
 }
