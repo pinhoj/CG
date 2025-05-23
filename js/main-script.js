@@ -513,9 +513,9 @@ function onKeyUp(e) {
         case "ArrowLeft":
         case "ArrowRight":
             if (pressedKeys["ArrowLeft"] && !pressedKeys["ArrowRight"]) {
-                trailerMove.x = 2;
-            } else if (!pressedKeys["ArrowLeft"] && pressedKeys["ArrowRight"]) {
                 trailerMove.x = -2;
+            } else if (!pressedKeys["ArrowLeft"] && pressedKeys["ArrowRight"]) {
+                trailerMove.x = 2;
             } else {
                 trailerMove.x = 0;
             }
