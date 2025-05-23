@@ -13,7 +13,7 @@ let cameras = [], camera, scene, renderer;
 let rotateHead = 0, rotateWaist = 0, rotateFeet = 0, moveArms = 0;
 let LArm, RArm, Feet = new THREE.Group(), Legs = new THREE.Group(), Head;
 let delta;
-let trailerMove = {x: 0, y: 0};
+let trailerMove = {x: 0, z: 0};
 let pressedKeys = {};
 let trailerLocked = false;
 let snapping = false;
@@ -306,7 +306,7 @@ function handleCollisions() {
     snapTarget.copy(robot.position);
     snapTarget.x = -120;
     snapTarget.y = 35;
-    snapTarget.z = trailer.position.z;
+    snapTarget.z = robot.position.z;
 }
 
 ////////////
@@ -318,11 +318,11 @@ function update() {
     if(trailerLocked && isRobot) {
         trailerLocked = false;
     }
-    
+
     checkTransformations();
     if (!trailerLocked && !snapping) {
         trailer.position.x += trailerMove.x;
-        trailer.position.y += trailerMove.y;
+        trailer.position.z += trailerMove.z;
 
         if (checkCollisions()) {
             handleCollisions();
@@ -414,10 +414,10 @@ function onKeyDown(e) {
     pressedKeys[e.key] = true;
     switch (e.key) {
         case "ArrowUp":
-            trailerMove.y = 2;
+            trailerMove.z = 2;
             break;
         case "ArrowDown":
-            trailerMove.y = -2;
+            trailerMove.z = -2;
             break;
         case "ArrowLeft":
             trailerMove.x = -2;
@@ -483,7 +483,7 @@ function onKeyDown(e) {
             rotateHead = 0;
         }
         if (pressedKeys["ArrowUp"] && pressedKeys["ArrowDown"]) {
-            trailerMove.y = 0;
+            trailerMove.z = 0;
         }
         if (pressedKeys["ArrowLeft"] && pressedKeys["ArrowRight"]) {
             trailerMove.x = 0;
@@ -498,7 +498,7 @@ function onKeyUp(e) {
     switch (e.key) {
         case "ArrowUp":
         case "ArrowDown":
-            trailerMove.y = 0;
+            trailerMove.z = 0;
             break;
         case "ArrowLeft":
         case "ArrowRight":
