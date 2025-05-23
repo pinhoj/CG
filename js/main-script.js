@@ -32,7 +32,7 @@ function createScene() {
     scene.add(new THREE.AxesHelper(10));
     
     createRobot(0, -100, 0);
-    createTrailer(-150, 35, 0);
+    createTrailer(-250, 35, 0);
 }
 
 //////////////////////
@@ -42,11 +42,10 @@ function createCameras() {
     const positions = new Array(new Array(200, 0, 0), // frontal
                                 new Array(0, 0, 200), // lateral
                                 new Array(0, 200, 0), // topo
-                                new Array(200, 150, 200), // perspetiva isométrica - projeção ortogonal
-                                new Array(500, 500, 500)); // perspetiva isométrica - projeção perspetiva
+                                new Array(200, 150, 200)); // perspetiva isométrica - projeção perspetiva
 
-    for (let i = 0; i < 5; i++) {
-        if (i == 4) {
+    for (let i = 0; i < 4; i++) {
+        if (i == 3) {
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
         } else {
             camera = new THREE.OrthographicCamera(window.innerWidth / -5,
@@ -61,7 +60,7 @@ function createCameras() {
         camera.lookAt(scene.position);
         cameras.push(camera);
     }
-    camera = cameras[1];
+    camera = cameras[0];
 }
 ////////////////////////
 /* CREATE OBJECT3D(S) */
@@ -237,6 +236,13 @@ function createRobot(x, y, z){
     scene.add(robot);
 }
 
+function addSnapPiece(trailer,x,y,z){
+    const boxGeometry = new THREE.BoxGeometry(20, 10, 10);
+    const mesh = new THREE.Mesh(boxGeometry, materials.get("pipe"));
+    mesh.position.set(x,y,z);
+    trailer.add(mesh);
+}
+
 function createTrailer(x, y, z) {
     trailer = new THREE.Object3D();
 
@@ -251,6 +257,7 @@ function createTrailer(x, y, z) {
     addWheel(trailer, -40, -30, -40);
     addWheel(trailer, -60, -30, 40);
     addWheel(trailer, -40, -30, 40);
+    addSnapPiece(trailer, 90, -25, 0);
 
     trailer.position.set(x, y, z);
     scene.add(trailer);
@@ -322,7 +329,7 @@ function update() {
     checkTransformations();
     if (!trailerLocked && !snapping) {
         trailer.position.x += trailerMove.x;
-        trailer.position.z += trailerMove.z;
+        trailer.position.z -= trailerMove.z;
 
         if (checkCollisions()) {
             handleCollisions();
@@ -437,9 +444,6 @@ function onKeyDown(e) {
         case "4": // 4
             camera = cameras[3];
             break;
-        case "5": // 5
-            camera = cameras[4];
-            break;
         case "7": // 7
             materials.forEach(value => {value.wireframe = !value.wireframe});
             break;
@@ -498,11 +502,23 @@ function onKeyUp(e) {
     switch (e.key) {
         case "ArrowUp":
         case "ArrowDown":
-            trailerMove.z = 0;
+            if (pressedKeys["ArrowUp"] && !pressedKeys["ArrowDown"]) {
+                trailerMove.z = 2;
+            } else if (!pressedKeys["ArrowUp"] && pressedKeys["ArrowDown"]) {
+                trailerMove.z = -2;
+            } else {
+                trailerMove.z = 0;
+            }
             break;
         case "ArrowLeft":
         case "ArrowRight":
-            trailerMove.x = 0;
+            if (pressedKeys["ArrowLeft"] && !pressedKeys["ArrowRight"]) {
+                trailerMove.x = 2;
+            } else if (!pressedKeys["ArrowLeft"] && pressedKeys["ArrowRight"]) {
+                trailerMove.x = -2;
+            } else {
+                trailerMove.x = 0;
+            }
             break;
         case "q":
         case "a":
