@@ -544,8 +544,9 @@ function createWalls(house) {
 
 function createDoorsAndWindows(house){
 
+    // Front Wall: Two windows and one door
     let vertices = new Float32Array([
-        9, 0, 13,    11, 0, 13,   11, 4, 13,   9, 4, 13
+        4, 6, 13,   6, 6, 13,    6, 8 , 13,     4, 8 , 13
     ]);
 
     let indices = new Uint32Array([0, 1, 2, 0, 2, 3]);
@@ -554,31 +555,94 @@ function createDoorsAndWindows(house){
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
     geometry.computeVertexNormals();
 
-    let door = new THREE.Mesh(geometry, materials.get("window"));
-    house.add(door);
+    let window1 = new THREE.Mesh(geometry, materials.get("window"));
+    house.add(window1);
 
     vertices = new Float32Array([
-        4, 6, 13,   6, 6, 13,    6, 8 , 13,     4, 8 , 13 
+        9, 6, 13,   11, 6, 13,    11, 8 , 13,     9, 8 , 13
     ]);
 
     geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices,  3));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-    let window1 = new THREE.Mesh(geometry, materials.get("window"));
-    house.add(window1);
+    let window2 = new THREE.Mesh(geometry, materials.get("window"));
+    house.add(window2);
 
     vertices = new Float32Array([
-        14, 6, 13,  16, 6, 13,  16, 8, 13,  14, 8, 13
+        14, 0, 13,   16, 0, 13,    16, 4, 13,     14, 4 , 13
     ]);
 
     geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
     geometry.computeVertexNormals();
-    let window2 = new THREE.Mesh(geometry, materials.get("window"));
-    house.add(window2);
+    let door = new THREE.Mesh(geometry, materials.get("window"));
+    house.add(door);
 
+    // Back Wall: Two windows
+    vertices = new Float32Array([
+        6, 6, 2,    8, 6, 2,    8, 8, 2,    6, 8, 2
+    ]);
+
+    geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    geometry.computeVertexNormals();
+    let backWindow1 = new THREE.Mesh(geometry, materials.get("window"));
+    house.add(backWindow1);
+
+    vertices = new Float32Array([
+        14, 6, 2,    16, 6, 2,    16, 8, 2,    14, 8, 2
+    ]);
+
+    geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    geometry.computeVertexNormals();
+    let backWindow2 = new THREE.Mesh(geometry, materials.get("window"));
+    house.add(backWindow2);
+
+    // Left Wall: Square window
+    vertices = new Float32Array([
+        2, 4, 6,    2, 4, 8,    2, 6, 8,    2, 6, 6
+    ]);
+
+  
+    geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    geometry.computeVertexNormals();
+    let leftSquareWindow = new THREE.Mesh(geometry, materials.get("window"));
+    house.add(leftSquareWindow);
+
+    // Left Wall: Circular window
+    let leftCircularGeometry = new THREE.CircleGeometry(1, 32);
+    let leftCircularWindow = new THREE.Mesh(leftCircularGeometry, materials.get("window"));
+    leftCircularWindow.position.set(2, 7, 7);
+    leftCircularWindow.rotation.y = Math.PI / 2;
+    house.add(leftCircularWindow);
+
+    // Right Wall: Square window
+    vertices = new Float32Array([
+        20, 4, 6,    20, 4, 8,    20, 6, 8,    20, 6, 6
+    ]);
+
+    geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    geometry.computeVertexNormals();
+    let rightSquareWindow = new THREE.Mesh(geometry, materials.get("window"));
+    house.add(rightSquareWindow);
+
+    // Right Wall: Circular window
+    let rightCircularGeometry = new THREE.CircleGeometry(1, 32);
+    let rightCircularWindow = new THREE.Mesh(rightCircularGeometry, materials.get("window"));
+    rightCircularWindow.position.set(20, 7, 7);
+    rightCircularWindow.rotation.y = Math.PI / 2;
+    house.add(rightCircularWindow);
 }
+
+
 
 function createRoof(house){
 
