@@ -423,7 +423,7 @@ function createWalls(house) {
     let wallFront = new THREE.Group();
 
     let vertices = new Float32Array([
-        2,0,13,     7,0,13,     7,9,13,     2,9,13
+        2,0,13,     20,0,13,     20,9,13,     2,9,13
     ]);
 
     let indices = new Uint32Array([0, 1, 2, 0, 2, 3]);
@@ -546,7 +546,7 @@ function createDoorsAndWindows(house){
 
     // Front Wall: Two windows and one door
     let vertices = new Float32Array([
-        4, 6, 13,   6, 6, 13,    6, 8 , 13,     4, 8 , 13
+        4, 6, 13.1,   6, 6, 13.1,    6, 8 , 13.1,     4, 8 , 13.1
     ]);
 
     let indices = new Uint32Array([0, 1, 2, 0, 2, 3]);
@@ -559,7 +559,7 @@ function createDoorsAndWindows(house){
     house.add(window1);
 
     vertices = new Float32Array([
-        9, 6, 13,   11, 6, 13,    11, 8 , 13,     9, 8 , 13
+        9, 6, 13.1,   11, 6, 13.1,    11, 8 , 13.1,     9, 8 , 13.1
     ]);
 
     geometry = new THREE.BufferGeometry();
@@ -569,7 +569,7 @@ function createDoorsAndWindows(house){
     house.add(window2);
 
     vertices = new Float32Array([
-        14, 0, 13,   16, 0, 13,    16, 4, 13,     14, 4 , 13
+        14, 0, 13.1,   16, 0, 13.1,    16, 4, 13.1,     14, 4 , 13.1
     ]);
 
     geometry = new THREE.BufferGeometry();
@@ -581,7 +581,7 @@ function createDoorsAndWindows(house){
 
     // Back Wall: Two windows
     vertices = new Float32Array([
-        6, 6, 2,    8, 6, 2,    8, 8, 2,    6, 8, 2
+        6, 6, 1.9,    8, 6, 1.9,    8, 8, 1.9,    6, 8, 1.9
     ]);
 
     geometry = new THREE.BufferGeometry();
@@ -592,7 +592,7 @@ function createDoorsAndWindows(house){
     house.add(backWindow1);
 
     vertices = new Float32Array([
-        14, 6, 2,    16, 6, 2,    16, 8, 2,    14, 8, 2
+        14, 6, 1.9,    16, 6, 1.9,    16, 8, 1.9,    14, 8, 1.9
     ]);
 
     geometry = new THREE.BufferGeometry();
@@ -604,7 +604,7 @@ function createDoorsAndWindows(house){
 
     // Left Wall: Square window
     vertices = new Float32Array([
-        2, 4, 6,    2, 4, 8,    2, 6, 8,    2, 6, 6
+        1.9, 4, 6,    1.9, 4, 8,    1.9, 6, 8,    1.9, 6, 6
     ]);
 
   
@@ -618,13 +618,13 @@ function createDoorsAndWindows(house){
     // Left Wall: Circular window
     let leftCircularGeometry = new THREE.CircleGeometry(1, 32);
     let leftCircularWindow = new THREE.Mesh(leftCircularGeometry, materials.get("window"));
-    leftCircularWindow.position.set(2, 7, 7);
+    leftCircularWindow.position.set(2.1, 7, 7);
     leftCircularWindow.rotation.y = Math.PI / 2;
     house.add(leftCircularWindow);
 
     // Right Wall: Square window
     vertices = new Float32Array([
-        20, 4, 6,    20, 4, 8,    20, 6, 8,    20, 6, 6
+        20.1, 4, 6,    20.1, 4, 8,    20.1, 6, 8,    20.1, 6, 6
     ]);
 
     geometry = new THREE.BufferGeometry();
@@ -637,7 +637,7 @@ function createDoorsAndWindows(house){
     // Right Wall: Circular window
     let rightCircularGeometry = new THREE.CircleGeometry(1, 32);
     let rightCircularWindow = new THREE.Mesh(rightCircularGeometry, materials.get("window"));
-    rightCircularWindow.position.set(20, 7, 7);
+    rightCircularWindow.position.set(20.1, 7, 7);
     rightCircularWindow.rotation.y = Math.PI / 2;
     house.add(rightCircularWindow);
 }
