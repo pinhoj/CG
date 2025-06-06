@@ -12,8 +12,8 @@ let moon = new THREE.Object3D();
 let moonlight;
 let house = new THREE.Object3D();
 let tree = new THREE.Object3D();
+let pixelHeightMap;
 let ovni;
-let trees = [];
 let cameras = [], camera, scene, renderer;
 var clock = new THREE.Clock();
 var pressedKeys = {};
@@ -37,10 +37,10 @@ function createScene() {
     createGround();
     createSky();
     createLights();
-
+    createMoon(120,250,-120);
     // createHouse(0,0,0);
-    createTrees();
-
+    // createTrees();
+    
 }
 
 function createGround() {
@@ -56,7 +56,23 @@ function createGround() {
         updateGround();
         terrainMesh.position.set(0,0,0);
         scene.add(terrainMesh);
+        createImage();
     });
+}
+
+function createImage() {
+    fetch('displacement_map.json')
+        .then(response => response.json())
+        .then(data => {
+            
+            pixelHeightMap = data;
+
+            console.log(pixelHeightMap);
+
+            requestAnimationFrame(() => {
+                createTrees();
+            });
+        })  
 }
 
 function updateGround() {
@@ -122,9 +138,9 @@ function updateSky() {
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
     
-    // 2. Create vertical gradient from blue (top) to dark blue (bottom)
+    // 2. Create vertical gradient from violet (top) to dark blue (bottom)
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#390569');     // Light blue (sky)
+    gradient.addColorStop(0, '#390569');     // dark violet (sky)
     gradient.addColorStop(1, '#000022');     // Dark blue (space)
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -176,8 +192,8 @@ function createCamera(){
     const distance = 50 / Math.tan(vFOV / 2);
 
     // Position camera above center of plane, looking down
-    camera.position.set(-25, distance * 0.6, 195);
-    camera.lookAt(50, 60, -50);
+    camera.position.set(-35, distance , 340);
+    camera.lookAt(50, 80, -50);
 
 
 }
@@ -261,12 +277,31 @@ function updateMaterials(){
 }
 
 function createTrees() {
-    createTree(-25,60,125, 10 + Math.random() * 10,Math.floor(Math.random() * 10),Math.floor(Math.random() * 3), 3);
+    console.log("creating trees");
+    const gridSize = 16; // 10x10 grid = 100 trees
+    const squareSize = 64;
+    
+    for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+            const baseX = col * squareSize;
+            const baseZ = row * squareSize;
+            
+            // Random offset within the square
+            const x = baseX + Math.floor(Math.random() * squareSize);
+            const z = baseZ + Math.floor(Math.random() * squareSize);
+            const height = 10 + Math.random() * 10;
+            const pixelidx = z * 1024 + x;
+            console.log(pixelidx);
+            const y = pixelHeightMap[pixelidx]* 100 / 255 - height/2;
+            console.log("tree", x - 512, y, z - 512, height);
+            createTree(x - 512, y, z - 512, height);
+        }
+    }
+    // createTree(-25,60,125, 10 + Math.random() * 10);
 
 }
 
 function createTree(x, y, z, trunkHeight = 12){
-    const branchInclines = [Math.PI, -Math.PI, 0];
     const tree = new THREE.Group();
 
     // Tronco
@@ -276,32 +311,26 @@ function createTree(x, y, z, trunkHeight = 12){
     
     // Ramos
     for (let i = 0; i < 2; i++) {
-        const branchGeometry = new THREE.CylinderGeometry(1, 1, trunkHeight * 0.5);
+        const branchGeometry = new THREE.CylinderGeometry(1, 1, trunkHeight);
         const branch = new THREE.Mesh(branchGeometry, materials.get("tree trunk"));
         const branchHolder = new THREE.Object3D();
 
         // Posição de origem no topo do tronco
-        branch.position.y = trunkHeight / 4;
+        branch.position.y = trunkHeight / 2;
         //copa
         const foliageGeometry = new THREE.SphereGeometry(3.5, 16, 16);
         const foliage = new THREE.Mesh(foliageGeometry, materials.get("tree foliage"));
         foliage.scale.set(1.4, 0.8 , 1.2);
-        foliage.position.y = trunkHeight * 0.5;
+        foliage.position.y = trunkHeight;
         branchHolder.add(foliage);
         branchHolder.add(branch);
         branchHolder.position.y = trunkHeight * (0.5 * Math.random()); 
         
-        const angleH = (Math.random()) * Math.PI; // horizontal (em torno de y)
-        const angleV = Math.random() * Math.PI / 4; // vertical (para cima)
-        branchHolder.rotation.y = angleH;
-        branchHolder.rotation.z = -angleV;
-
-
-        trunk.add(branchHolder);
+        
 
         if (i == 1) { //create subbranch
             const subbranch = new THREE.Mesh(branchGeometry, materials.get("tree trunk"));
-            subbranch.scale()
+            subbranch.scale.set(0.5,0.5,0.5);
             const subbranchHolder = new THREE.Object3D();
 
             // Posição de origem no topo do tronco
@@ -310,19 +339,26 @@ function createTree(x, y, z, trunkHeight = 12){
             const subfoliageGeometry = new THREE.SphereGeometry(3.5, 16, 16);
             const subfoliage = new THREE.Mesh(subfoliageGeometry, materials.get("tree foliage"));
             subfoliage.scale.set(1, 0.6 , 0.8);
-            subfoliage.position.y = trunkHeight * 0.5;
+            subfoliage.position.y = trunkHeight/2   ;
             subbranchHolder.add(subfoliage);
             subbranchHolder.add(subbranch);
             subbranchHolder.position.y = trunkHeight * (0.5 * Math.random()); 
             
-            const angleH = (Math.random()) * Math.PI; // horizontal (em torno de y)
+            const angleH = (Math.random()) * Math.PI * 2; // horizontal (em torno de y)
             const angleV = Math.random() * Math.PI / 4; // vertical (para cima)
-            branchHolder.rotation.y = angleH;
-            branchHolder.rotation.z = -angleV;
+            subbranchHolder.rotation.y = angleH;
+            subbranchHolder.rotation.z = -angleV;
 
 
-            trunk.add(branchHolder); 
+            branchHolder.add(subbranchHolder); 
         }
+        const angleH = (Math.random()) * Math.PI; // horizontal (em torno de y)
+        const angleV = Math.random() * Math.PI / 4; // vertical (para cima)
+        branchHolder.rotation.y = angleH;
+        branchHolder.rotation.z = -angleV;
+
+
+        trunk.add(branchHolder);
     }
     tree.add(trunk);
 
@@ -333,8 +369,8 @@ function createTree(x, y, z, trunkHeight = 12){
 
 function createMoon(x, y ,z){
 
-    const moonGeometry = new THREE.SphereGeometry(3, 32, 32);
-    const moon = new THREE.Mesh(moonGeometry, materials.get("moon"));
+    const moonGeometry = new THREE.SphereGeometry(50, 32, 32);
+    moon = new THREE.Mesh(moonGeometry, materials.get("moon"));
     moon.position.set(x, y, z);
 
     scene.add(moon);
