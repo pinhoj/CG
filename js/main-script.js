@@ -13,12 +13,17 @@ let moonlight;
 let house = new THREE.Object3D();
 let tree = new THREE.Object3D();
 let pixelHeightMap;
-let ovni;
+let ovni, ovniSpotLight, ovniSpotLightTarget;
 let cameras = [], camera, scene, renderer;
 var clock = new THREE.Clock();
 var pressedKeys = {};
+let changeSky, skyChanging = false, changeGround, groundChanging = false, changeDirLight, lightChanging = false;
+let changeSpotLight, spotChanging = false;
+let changePointLight, pointChanging = false;
+let makeVR, changingVR = false, isVR = false;
 let skyDome;
-let terrainMesh;
+let terrainMesh, delta, dirLight;
+let moveOvniX = 0, moveOvniZ = 0;
 
 //materials
 let materials = new Map();
@@ -38,7 +43,9 @@ function createScene() {
     createSky();
     createLights();
     createMoon(120,250,-120);
-    //createHouse(0,0,0);
+    createHouse(0,62,150);
+    createOVNI(-50,150,50);
+
     // createTrees();
     
 }
@@ -57,6 +64,8 @@ function createGround() {
         terrainMesh.position.set(0,0,0);
         scene.add(terrainMesh);
         createImage();
+        terrainMesh.receiveShadow = true;
+        terrainMesh.castShadow = true;
     });
 }
 
@@ -68,11 +77,11 @@ function createImage() {
             console.log(pixelHeightMap);
 
             // POSICIONA A CASA SOBRE O TERRENO
-            const casaX = 600;
-            const casaZ = 400;
-            const idx = casaZ * 1024 + casaX;
-            const altura = pixelHeightMap[idx] * 100 / 255;
-            createHouse(casaX - 512, altura, casaZ - 512);
+            // const casaX = 600;
+            // const casaZ = 400;
+            // const idx = casaZ * 1024 + casaX;
+            // const altura = pixelHeightMap[idx] * 100 / 255;
+            // createHouse(casaX - 512, altura, casaZ - 512);
 
             requestAnimationFrame(() => {
                 createTrees();
@@ -106,7 +115,7 @@ function updateGround() {
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set( 64, 64 );
+    texture.repeat.set( 32, 32 );
 
     terrainMesh.material.map = texture;
 }
@@ -178,10 +187,22 @@ function updateSky() {
 
 
 function createLights() {
-    const light = new THREE.DirectionalLight(0xffffff, 0.1);
-    light.position.set(25, 80, 25);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0xffffff, 1));
+    dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    dirLight.position.set(250, 800, 250);
+    // Create a target object
+    const targetObject = new THREE.Object3D();
+    targetObject.position.set(0, 0, 0); // Light will point here
+
+    // Assign target to the light
+    dirLight.target = targetObject;
+
+    // Add both to the scene
+    scene.add(dirLight);
+    scene.add(targetObject);
+
+    // Important: Update world matrix
+    dirLight.target.updateMatrixWorld();
+    scene.add(dirLight);
 }
 //////////////////////
 /* CREATE CAMERA(S) */
@@ -201,6 +222,19 @@ function createCamera(){
     camera.lookAt(50, 80, -50);
 
 
+}
+
+function setPerspective(){
+    renderer.xr.enabled = false;
+    renderer.setAnimationLoop(null); // Stops VR rendering
+}
+
+function setVR() {
+    document.body.appendChild( VRButton.createButton( renderer ) );
+    renderer.xr.enabled = true;
+    renderer.setAnimationLoop( function () {
+        renderer.render( scene, camera );
+    } );
 }
 ////////////////////////
 /* CREATE OBJECT3D(S) */
@@ -283,8 +317,8 @@ function updateMaterials(){
 
 function createTrees() {
     console.log("creating trees");
-    const gridSize = 16; // 10x10 grid = 100 trees
-    const squareSize = 64;
+    const gridSize = 8; // 10x10 grid = 100 trees
+    const squareSize = 128;
     
     for (let row = 0; row < gridSize; row++) {
         for (let col = 0; col < gridSize; col++) {
@@ -296,9 +330,9 @@ function createTrees() {
             const z = baseZ + Math.floor(Math.random() * squareSize);
             const height = 10 + Math.random() * 10;
             const pixelidx = z * 1024 + x;
-            console.log(pixelidx);
+            // console.log(pixelidx);
             const y = pixelHeightMap[pixelidx]* 100 / 255 - height/2;
-            console.log("tree", x - 512, y, z - 512, height);
+            // console.log("tree", x - 512, y, z - 512, height);
             createTree(x - 512, y, z - 512, height);
         }
     }
@@ -374,7 +408,7 @@ function createTree(x, y, z, trunkHeight = 12){
 
 function createMoon(x, y ,z){
 
-    const moonGeometry = new THREE.SphereGeometry(50, 32, 32);
+    const moonGeometry = new THREE.SphereGeometry(25, 32, 32);
     moon = new THREE.Mesh(moonGeometry, materials.get("moon"));
     moon.position.set(x, y, z);
 
@@ -589,21 +623,24 @@ function createOVNILights(){
 
     for(let i = 0; i < nLights; i++){
         theta = i * (2 * Math.PI) / nLights;
-
+        
         let pivot = new THREE.Object3D();
-        pivot.rotation.y = theta;
-        ovni.add(pivot);
-
-        let geometry = new THREE.SphereGeometry(0.22, 12, 12, 0, 2 * Math.PI, 0, 0.6 * Math.PI);
+        
+        let geometry = new THREE.SphereGeometry(0.2, 12, 12);
         let mesh = new THREE.Mesh(geometry, materials.get("ovni light"));
-        mesh.rotation.x = Math.PI;
-        mesh.rotation.set(1.8, -0.3, 0);
-
-        let pointLight = new THREE.PointLight(materials.get("point light"), 0.18, 30, 2.0);
-        pointLight.position.set(0, 0, 0);
-
+        mesh.position.x = 5 * Math.PI / 6;
+        mesh.position.y = -0.2;
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
+        
+        let pointLight = new THREE.PointLight( 0xffffff, 0.6, 100, 0.2);
+        pointLight.position.set(Math.PI , -0.6, 0);
+        
         pivot.add(mesh);
         pivot.add(pointLight);
+        pivot.rotation.y = theta;
+        pointLight.position.applyMatrix4(pivot.matrixWorld); // Ensures light follows rotation
+        ovni.add(pivot);
 
         ovni.ovniPointLights.push(pointLight);
     }
@@ -631,19 +668,23 @@ function createOVNI(x, y, z){
     mesh = new THREE.Mesh(geometry, materials.get("beam"));
     mesh.position.set(0, -0.55, 0);
     ovni.add(mesh);
-
+    
     // Spotlight
-    let spotLight = new THREE.SpotLight(materials.get("spotlight"), 0.7, 30, Math.PI/7, 0.3);
-    spotLight.position.set(0, -0.55, 0);
-    spotLight.target.position.set(0, -10, 0);
-    mesh.add(spotLight);
-    mesh.add(spotLight.target);
-    ovni.spolight = spotLight;
+    ovniSpotLight = new THREE.SpotLight(0xffffff, 3, 0, Math.PI/7, 0, 0.2);
+    ovniSpotLight.position.set(x, y - 10, z);
+    ovniSpotLightTarget = new THREE.Object3D;
+    ovniSpotLightTarget.position.set(x, y - 100, z);
+    ovniSpotLight.target = ovniSpotLightTarget;
+    scene.add(ovniSpotLight);
+    scene.add(ovniSpotLightTarget);
+    // const spotHelper = new THREE.SpotLightHelper(ovniSpotLight);
+    // scene.add(spotHelper);  
 
     // Luzes do ovni
     createOVNILights();
 
     ovni.position.set(x, y, z);
+    ovni.scale.set(10,10,10);
     scene.add(ovni);
 }
 
@@ -664,7 +705,46 @@ function handleCollisions() {
 /* UPDATE */
 ////////////
 function update() {
-    // delta = clock.getDelta();
+    delta = clock.getDelta();
+    ovni.rotateY(1);
+    if (changeSky && !skyChanging){
+        updateSky()
+        skyChanging = true;
+    }
+    if (changeGround && !groundChanging){ 
+        updateGround()
+        groundChanging = true;
+    }
+    if (changeDirLight && !lightChanging){
+        dirLight.visible = !dirLight.visible;
+        lightChanging = true;
+    }
+    if (makeVR && !changingVR){
+        if (!isVR) setVR();
+        else setPerspective();
+        isVR = !isVR;
+        changingVR = true;
+    }
+    if (changeSpotLight && !spotChanging){
+        ovniSpotLight.visible = !ovniSpotLight.visible;
+        spotChanging = true;
+    }
+    if (changePointLight && !pointChanging){
+        ovni.ovniPointLights.forEach(light => {
+            light.visible = !light.visible;
+        });
+        pointChanging = true;
+    }
+    if (moveOvniZ){
+        ovni.position.z += moveOvniZ;
+        ovniSpotLight.position.z += moveOvniZ;
+        ovniSpotLightTarget.position.z += moveOvniZ;
+    }
+    if (moveOvniX){
+        ovni.position.x += moveOvniX;
+        ovniSpotLight.position.x += moveOvniX;
+        ovniSpotLightTarget.position.x += moveOvniX;
+    }
 
     
 }
@@ -687,12 +767,13 @@ function init() {
         antialias: true
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
     clock.start()
 
     createMaterials();
-    createCamera();
     createScene();
+    createCamera();
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -721,34 +802,47 @@ function onKeyDown(e) {
     pressedKeys[e.key] = true;
     switch (e.key) {
         case "ArrowUp":
-            camera.position.z -= 5;
+            moveOvniZ = -5;
             break;
         case "ArrowDown":
-            camera.position.z += 5;
+            moveOvniZ = +5;
             break;
         case "ArrowLeft":
-            camera.position.x -= 5;
+            moveOvniX = -5;
             break;
         case "ArrowRight":
-            camera.position.x += 5;
+            moveOvniX = 5;
             break;
         case "1": // 1
+            if (!groundChanging)
+                changeGround = true;
             break;
         case "2": // 2
+            if (!skyChanging)
+                changeSky = true;
             break;
-        case "3": // 3
-            break;
-        case "4": // 4
+        case "D":
+        case "d": // D
+            if (!lightChanging)
+                changeDirLight = true;
             break;
         case "7": // 7
+            if (!changingVR)
+                makeVR = true;
             break;
         case "q": // q
             break;
         case "a": // a
             break;
-        case "w": // w
+        case "P": // P
+        case "p": // p
+            if (!pointChanging)
+                changePointLight = true;
             break;
+        case "S": // s
         case "s": // s
+            if (!spotChanging)
+                changeSpotLight = true;
             break;
         case "e": //e
             break;
@@ -759,14 +853,16 @@ function onKeyDown(e) {
         case "f": // f
             break;
         }
-    console.log(camera.position);
-    // if (["q", "a", "w", "s", "e", "d", "r", "f", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+     if (["q", "a", "w", "s", "e", "d", "r", "f", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         
-    //     if (pressedKeys["q"] && pressedKeys["a"]) {
-    //         rotateFeet = 0;
-    //     }
+         if (pressedKeys["ArrowUp"] && pressedKeys["ArrowDown"]) {
+             moveOvniZ = 0;
+     }
+         if (pressedKeys["ArrowLeft"] && pressedKeys["ArrowRight"]) {
+             moveOvniX = 0;
+     }
         
-    // }
+ }
 }
 ///////////////////////
 /* KEY UP CALLBACK */
@@ -776,27 +872,51 @@ function onKeyUp(e) {
     switch (e.key) {
         case "ArrowUp":
         case "ArrowDown":
-            // if (pressedKeys["ArrowUp"] && !pressedKeys["ArrowDown"]) {
-            //     trailerMove.z = 2;
-            // } else if (!pressedKeys["ArrowUp"] && pressedKeys["ArrowDown"]) {
-            //     trailerMove.z = -2;
-            // } else {
-            //     trailerMove.z = 0;
-            // }
+            if (pressedKeys["ArrowUp"] && !pressedKeys["ArrowDown"]) {
+                moveOvniZ = -5;
+            } else if (!pressedKeys["ArrowUp"] && pressedKeys["ArrowDown"]) {
+                moveOvniZ = 5;
+            } else {
+                moveOvniZ = 0;
+            }
             break;
         case "ArrowLeft":
         case "ArrowRight":
-            
+            if (pressedKeys["ArrowLeft"] && !pressedKeys["ArrowRight"]) {
+                moveOvniX = -5;
+            } else if (!pressedKeys["ArrowLeft"] && pressedKeys["ArrowRight"]) {
+                moveOvniX = 5;
+            } else {
+                moveOvniX = 0;
+            }
             break;
-        case "q":
-        case "a":
-            
+        case "1":
+            changeGround = false;
+            groundChanging = false;
             break;
-        case "w":
+        case "2":
+            changeSky = false;
+            skyChanging = false;
+            break;
+        case "D":
+        case "d": // D
+            changeDirLight = false;
+            lightChanging = false;
+            break;
+        case "P":
+        case "p":
+            changePointLight = false;
+            pointChanging = false
+            break;
+        case "S":
         case "s":
-            
+            changeSpotLight = false;
+            spotChanging = false
             break;
-        case "e":
+        case "7":
+            makeVR = false;
+            changingVR = false;
+            break;
         case "d":
             
             break;
