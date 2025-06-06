@@ -38,7 +38,7 @@ function createScene() {
     createSky();
     createLights();
     createMoon(120,250,-120);
-    // createHouse(0,0,0);
+    //createHouse(0,0,0);
     // createTrees();
     
 }
@@ -64,10 +64,15 @@ function createImage() {
     fetch('displacement_map.json')
         .then(response => response.json())
         .then(data => {
-            
             pixelHeightMap = data;
-
             console.log(pixelHeightMap);
+
+            // POSICIONA A CASA SOBRE O TERRENO
+            const casaX = 600;
+            const casaZ = 400;
+            const idx = casaZ * 1024 + casaX;
+            const altura = pixelHeightMap[idx] * 100 / 255;
+            createHouse(casaX - 512, altura, casaZ - 512);
 
             requestAnimationFrame(() => {
                 createTrees();
@@ -207,7 +212,7 @@ function createMaterials() {
     materials.set("cockpit", new THREE.MeshLambertMaterial({ color: 0x66ccff, wireframe: false, side: THREE.DoubleSide}));
     materials.set("beam", new THREE.MeshLambertMaterial({ color: 0xe8d6a2, wireframe: false, side: THREE.DoubleSide}));
     materials.set("ovni light", new THREE.MeshLambertMaterial({ color: 0x00ffe6, wireframe: false, side: THREE.DoubleSide}));
-    materials.set("house body", new THREE.MeshLambertMaterial({ color: 0xf5f5dc, wireframe: false, side: THREE.FrontSide}));
+    materials.set("house body", new THREE.MeshLambertMaterial({  color: 0xff0000 }));
     materials.set("window", new THREE.MeshLambertMaterial({ color: 0x87ceeb, wireframe: false, side: THREE.FrontSide}));
     materials.set("roof", new THREE.MeshLambertMaterial({ color: 0xb22222, wireframe: false, side: THREE.FrontSide}));
     materials.set("tree trunk", new THREE.MeshLambertMaterial({ color: 0x8b4513, wireframe: false, side: THREE.DoubleSide}));
@@ -377,10 +382,8 @@ function createMoon(x, y ,z){
 }
 
 
-function createWalls(x, y, z) {
+function createWalls(house) {
     
-    const wall = new THREE.Group();
-
     // Front Wall
 
     let wallFront = new THREE.Group();
@@ -394,9 +397,10 @@ function createWalls(x, y, z) {
     let g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     g.setIndex(new THREE.BufferAttribute(indices, 1));
-    g.computerVertexNormals();
+    g.computeVertexNormals();
 
     let seg1 = new THREE.Mesh(g, materials.get("house body"));
+    wallFront.add(seg1);
     
     vertices = new Float32Array([
         7,0,13,     13,0,13,    13,5,13,    7,5,13
@@ -417,12 +421,13 @@ function createWalls(x, y, z) {
     g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     g.setIndex(new THREE.BufferAttribute(indices, 1));
+    g.computeVertexNormals();
     
     let seg3 = new THREE.Mesh(g, materials.get("house body"));
     wallFront.add(seg3);
 
     wallFront.position.set(0, 0, 0);
-    wall.add(wallFront);
+    house.add(wallFront);
 
     // Back Wall
     let wallBack = new THREE.Group();
@@ -439,7 +444,7 @@ function createWalls(x, y, z) {
     let segBack = new THREE.Mesh(g, materials.get("house body"));
     wallBack.add(segBack);
     wallBack.position.set(0, 0, 0);
-    wall.add(wallBack);
+    house.add(wallBack);
 
     // Left Wall
     let wallLeft = new THREE.Group();
@@ -456,7 +461,7 @@ function createWalls(x, y, z) {
     let segLeft = new THREE.Mesh(g, materials.get("house body"));
     wallLeft.add(segLeft);
     wallLeft.position.set(0,0,0);
-    wall.add(wallLeft);
+    house.add(wallLeft);
 
     // Right Wall
 
@@ -499,7 +504,7 @@ function createWalls(x, y, z) {
     wallRight.add(segRight3);
 
     wallRight.position.set(0, 0, 0);
-    wall.add(wallRight);
+    house.add(wallRight);
 }
 
 
@@ -515,7 +520,7 @@ function createDoorsAndWindows(house){
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
     geometry.computeVertexNormals();
 
-    let door = new THREE.Mesh(g, materials.get("door"));
+    let door = new THREE.Mesh(geometry, materials.get("window"));
     house.add(door);
 
     vertices = new Float32Array([
@@ -555,10 +560,10 @@ function createRoof(house){
     ]);
 
     let geometry = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(vertices,  3));
-    g.setIndex(new THREE.BufferAttribute(indices,  1));
-    g.computeVertexNormals();
-    let roof = new THREE.Mesh(g, materials.get("roof"));
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices,  3));
+    geometry.setIndex(new THREE.BufferAttribute(indices,  1));
+    geometry.computeVertexNormals();
+    let roof = new THREE.Mesh(geometry, materials.get("roof"));
     house.add(roof);
 }
 
@@ -566,9 +571,13 @@ function createHouse(x, y, z){
 
     house = new THREE.Object3D();
 
-    createWalls(x, y, z);
-    createDoorsAndWindows(x, y, z);
-    createRoof(x, y, z);
+    createWalls(house);
+    createDoorsAndWindows(house);
+    createRoof(house);
+
+    house.add(new THREE.AxesHelper(20));
+    house.position.set(x - 11, y, z - 7.5);
+    house.scale.set(3, 3, 3);
 
     scene.add(house);
 }
@@ -634,7 +643,7 @@ function createOVNI(x, y, z){
     // Luzes do ovni
     createOVNILights();
 
-    ovni.poisition.set(x, y, z);
+    ovni.position.set(x, y, z);
     scene.add(ovni);
 }
 
@@ -682,8 +691,8 @@ function init() {
     clock.start()
 
     createMaterials();
-    createScene();
     createCamera();
+    createScene();
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
